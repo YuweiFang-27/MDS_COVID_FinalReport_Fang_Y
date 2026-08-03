@@ -1,0 +1,6 @@
+Metric,CV Score (SE)
+AUC,0.710 (0.011)
+Precision,0.856 (0.001)
+Recall,0.998 (0.001)
+Accuracy,0.854 (0.001)
+F1,0.921 (0.000)

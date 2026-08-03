@@ -1,0 +1,6 @@
+Metric,Test Score
+AUC,0.625
+Precision,0.773
+Recall,0.994
+Accuracy,0.771
+F1,0.87
