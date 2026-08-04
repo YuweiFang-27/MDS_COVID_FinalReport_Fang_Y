@@ -1,0 +1,1647 @@
+---
+title: "Exploring the willingness and perceived feasibility of self-isolation among Chinese residents during COVID-19"
+author: "Yuwei Fang a1948355"
+date: "2026-08-04"
+output:
+  pdf_document:
+    number_sections: true
+  word_document: default
+bibliography: TestBibFile.bib
+geometry: top=20mm, left=20mm, right=20mm, bottom=20mm
+fontsize: 12pt
+header-includes:
+  - \usepackage{float}
+  - \usepackage{tikz}
+  - \usetikzlibrary{positioning}
+---
+
+\newtheorem{theorem}{Theorem}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Project supervisor: Anthony Mays
+
+
+
+# Declaration
+
+In submitting this work I am indicating that I have read the University's Academic Integrity Policy. I declare that all material in this assessment is my own work except where there is clear acknowledgement and reference to the work of others. I give permission for this work to be reproduced and submitted to other academic staff for educational purposes.
+
+
+
+# Abstract
+
+Self-isolation was an important public health measure during the COVID-19 pandemic, but following self-isolation guidance may depend on both motivation and practical circumstances. This study examined willingness to self-isolate and perceived feasibility of self-isolation among Chinese residents. It aimed to identify and compare the important predictors of the two outcomes. Data were obtained from the China sample of the Imperial College London YouGov COVID-19 Behaviour Tracker. After outcome processing, predictor preparation and complete-case filtering, the final analytic dataset contained 13114 respondents. Logistic Regression and Random Forest models were developed separately for willingness and perceived feasibility. Model performance was evaluated using five-fold cross-validation and an independent test set. Repeated Random Forest feature importance analysis was used to compare the important predictors of the two outcomes.
+
+The results showed that willingness was easier to predict than perceived feasibility. Random Forest performed better than Logistic Regression on most performance measures. However, the near-perfect positive-class recall of the Random Forest models should be interpreted carefully because both outcomes were affected by class imbalance. The feature importance results showed that the two outcomes shared several important predictors, especially protective behaviour variables. Survey wave and employment status were more important for perceived feasibility, while age, non-household contacts and avoiding contact with symptomatic or exposed people were more important for willingness. Overall, the findings suggest that willingness and perceived feasibility are related but distinct aspects of self-isolation, and both motivation and practical ability should be considered when examining self-isolation behaviour.
+
+
+
+\newpage
+
+# Introduction
+
+COVID-19 was first identified in Wuhan, Hubei Province, China, in late 2019 and then spread rapidly during the early phase of the outbreak. Following the implementation of the lockdown strategy in Wuhan on 23 January 2020, strict control measures were gradually introduced and strengthened across mainland China [@Tang2020, p. 636]. These measures included movement restrictions, case and contact identification, isolation of confirmed cases, quarantine of close contacts, and social distancing measures to reduce transmission [@WHO2020]. Tang et al. [-@Tang2020, p. 645] also found that the epidemic trend in mainland China largely depended on changes in the numbers of quarantined and suspected cases. Therefore, China provides an important setting for examining isolation-related behaviour during COVID-19.
+
+
+Within this context, this study focuses on self-isolation, which was an important behavioural response for reducing the risk of COVID-19 transmission [@Issrani2021, p. 12]. Self-isolation is not only a public health recommendation, but also a behaviour that depends on whether individuals are motivated and practically able to follow the guidance in their everyday lives. Adherence to self-isolation may be influenced by individual, social and structural factors [@Kriens2022, p. 6]. Individuals need to perceive self-isolation as necessary and beneficial, while also having sufficient control over responsibilities that may require them to leave the house [@Eraso2021, p. 15]. Therefore, this study distinguishes between willingness to self-isolate and perceived feasibility of self-isolation. Willingness refers to an individual's motivation or intention to self-isolate, while perceived feasibility refers to how easy or difficult an individual believes self-isolation would be in their daily circumstances. Although willingness and perceived feasibility may be related, they represent different aspects of self-isolation and should not be treated as the same concept.
+
+
+This study is guided by two main research questions:
+
+1. Which factors are associated with willingness to self-isolate and perceived feasibility of self-isolation among Chinese residents during COVID-19?
+
+2. How are the important factors associated with these two outcomes similar or different?
+
+
+To answer these questions, this study uses two machine learning models to examine willingness and perceived feasibility of self-isolation and identify the factors most closely related to each outcome. The results show that willingness is easier to predict than perceived feasibility. The two outcomes share several important factors, although some factors are more important for one outcome than for the other. Overall, willingness and perceived feasibility are related, but they represent different aspects of self-isolation and should be considered separately.
+
+
+
+
+# Background
+
+## Literature Review
+
+Previous studies have shown that COVID-19 protective behaviours were related to demographic, socioeconomic and contextual factors. Women were more likely to view COVID-19 as a serious health problem and to follow public health measures [@Galasso2020]. Mask wearing was also more common among women, older people, and people living in urban or suburban areas [@Haischer2020]. Papageorge et al. [-@Papageorge2021] found that increases in self-protective behaviour were greater among high-income individuals, possibly because lower-income groups faced more practical barriers such as limited ability to work from home. Using machine learning, Taye et al. [-@Taye2023] identified a wide range of important predictors, including regional COVID-19 incidence, government policy, knowledge about COVID-19, trust in institutions, income and housing conditions. Overall, these studies show that protective behaviours were influenced by both individual characteristics and wider practical and social conditions.
+
+
+At the same time, many isolation-related studies focused on loneliness during lockdown and social distancing. Bu et al. [-@Bu2020] found that younger adults, people with lower household incomes, and people living alone had a higher risk of loneliness during the pandemic. Rumas et al. [-@Rumas2021] found that older age and a larger social network were associated with less loneliness, while having several physical or mental health conditions was associated with greater loneliness. They also found that greater loneliness was associated with lower quality of life.
+
+
+Beyond these psychological outcomes, research on self-isolation has examined both willingness and actual compliance. Using the Theory of Planned Behaviour, Issrani and Alam [-@Issrani2021] found that subjective norms and perceived behavioural control were significantly related to willingness to self-isolate, while attitude was not significant. Their results also showed differences by age, gender and family circumstances. In comparison, Kriens [-@Kriens2022] examined compliance among people who had tested positive for COVID-19 in the Netherlands. Age, gender, education and perceived health were significant predictors of compliance. Women, older adults, and those with more negative health perceptions were more likely to comply with self-isolation requirements. Together, these studies show that self-isolation may be related to motivational, demographic and health-related factors.
+
+
+However, many previous studies have focused on willingness to self-isolate, actual compliance, or emotional problems related to isolation, such as loneliness. Relatively few studies have examined the perceived feasibility of self-isolation, which refers to whether individuals believe they are able to self-isolate in their daily lives. There is also limited research directly examining the relationship between willingness and perceived feasibility. Therefore, there is little evidence showing whether people who are willing to self-isolate also consider it feasible, or whether the factors associated with the two outcomes are the same. The present study addresses these gaps by separately modelling and comparing willingness and perceived feasibility among Chinese residents during COVID-19.
+
+
+A recent machine learning study by Ryan et al. [-@Ryan2025] provides a useful methodological reference for the present project. Ryan et al. [-@Ryan2025] combined Australian survey data from the Imperial College London YouGov COVID-19 Data Hub [@Jones2020] with state-level mask-policy data from the Oxford COVID-19 Government Response Tracker [@Hale2021]. They examined two binary outcomes: face mask wearing and general protective behaviour compliance. During preprocessing, survey responses were recoded, related protective behaviour items were combined to construct the outcomes, categorical predictors were encoded, and observations with missing values were removed. Survey observations were then divided into periods before and after continuous mask mandates, and the processed data were split into training and test sets. The minority class was randomly up-sampled within each training set. Logistic Regression, Classification Tree, Random Forest, and XGBoost were compared using five-fold cross-validation and an independent test set. AUC was used as the main indicator for model selection, while accuracy, precision, recall, and F1 score were also reported. Random Forest and XGBoost models generally achieved the best predictive performance. To examine the stability of feature importance, the selected Random Forest and XGBoost models were fitted 10000 times for each outcome and mask-mandate period. The median importance and interquartile range were calculated for each feature, and the predictors were ranked by their median importance.
+
+Several factors were important both before and after mask mandates, including age, survey week, number of contacts, wellbeing, and perceived illness threat. However, trust in government and employment status were more important before continuous mandates, while willingness to self-isolate became more important after mandates were introduced. These methods and findings provided useful support for the model comparison and repeated feature importance analysis used in the present project.
+
+
+
+## Classification Models
+
+This section introduces the two classification models used in this study: Logistic Regression and Random Forest.
+
+
+### Logistic Regression
+
+Logistic Regression is a statistical model used for binary classification. It first calculates a linear score, \(z_i\), from the predictor variables:
+
+\begin{equation}
+z_i = \beta_0 + \beta_1x_{i1} + \beta_2x_{i2} + \cdots + \beta_px_{ip}.
+\label{eq:lr_linear}
+\end{equation}
+
+Here, \(x_{ij}\) is the value of predictor \(j\) for observation \(i\), \(\beta_j\) is the corresponding regression coefficient, and \(\beta_0\) is the intercept. The score \(z_i\) is a weighted sum of the predictor values.
+
+The linear score is then transformed into a probability using the logistic function:
+
+\begin{equation}
+P(Y_i = 1 \mid \mathbf{x}_i) = \frac{1}{1 + e^{-z_i}}.
+\label{eq:lr_probability}
+\end{equation}
+
+In this expression, \(P(Y_i = 1 \mid \mathbf{x}_i)\) is the probability that observation \(i\) belongs to the positive class, conditional on its predictor values \(\mathbf{x}_i\). The logistic function maps any real-valued score to a value between 0 and 1.
+
+The coefficients in Logistic Regression are interpreted on the log-odds scale. Holding the other predictors constant, a positive coefficient means that a higher predictor value is associated with higher log-odds, and therefore a higher predicted probability, of the positive outcome. A negative coefficient means that a higher predictor value is associated with lower log-odds and a lower predicted probability of the positive outcome.
+
+
+### Random Forest
+
+A decision tree is a classification model that makes predictions by repeatedly dividing observations into smaller groups according to their predictor values. All observations begin at the root node. At each internal node, a decision rule is applied using one of the predictors. Each split is selected to make the resulting groups more homogeneous with respect to the outcome. This process continues until a stopping condition is reached. The final nodes are called terminal nodes, or leaves [@deVille2013, pp. 449--450].
+
+Figure \ref{fig:decision-tree-example} provides a simple example of a decision tree for binary classification. The first split is based on age. Respondents younger than 45 are then divided according to whether one child lives in the household. Each path finishes at a terminal node containing a predicted class. The values and decision rules in this figure are illustrative and are not results from the fitted models in this study.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  scale=0.85,
+  transform shape,
+  node distance=1.0cm and 1.5cm,
+  every node/.style={
+    draw,
+    rounded corners,
+    align=center,
+    minimum width=2.5cm,
+    minimum height=0.55cm,
+    font=\small
+  }
+]
+
+\node (root) {Age $<$ 45?};
+
+\node [below left=of root] (left) {One child\\in household?};
+
+\node [below right=of root] (right) {Predict: 1};
+
+\node [below left=of left] (leftyes) {Predict: 0};
+
+\node [below right=of left] (leftno) {Predict: 1};
+
+\draw[->] (root) -- node[left, draw=none, font=\small] {Yes} (left);
+\draw[->] (root) -- node[right, draw=none, font=\small] {No} (right);
+\draw[->] (left) -- node[left, draw=none, font=\small] {Yes} (leftyes);
+\draw[->] (left) -- node[right, draw=none, font=\small] {No} (leftno);
+
+\end{tikzpicture}
+
+
+\caption{Illustrative example of a decision tree for binary classification.}
+\label{fig:decision-tree-example}
+\end{figure}
+
+
+For a binary outcome, a decision tree can estimate the probability that an observation belongs to the positive class using the class distribution in the terminal node reached by that observation. For example, if most training observations in a terminal node belong to the positive class, a new observation reaching that node will receive a higher estimated probability of being positive.
+
+Random Forest is an ensemble classification method that combines a collection of decision-tree classifiers [@Breiman2001, p. 6]. It combines many decision trees rather than relying on the structure and predictions of a single tree. Each tree is fitted using a bootstrap sample drawn from the training data with replacement. This means that observations are randomly sampled from the training set, with some observations possibly selected more than once and others not selected. At each split, only a random subset of predictors is considered. Together, the use of different bootstrap samples and random subsets of predictors produces variation among the trees.
+
+A single decision tree can be sensitive to changes in the training data, and a small change may produce different splits. By combining predictions from many different trees, Random Forest reduces the influence of any single tree and produces more stable predictions. Multiple-tree methods can reduce model variance and improve generalisation to new observations [@deVille2013, pp. 453--454].
+
+For a binary outcome, the Random Forest probability is calculated by averaging the estimated positive-class probabilities produced by all trees. A binary class can then be assigned using a selected probability threshold.
+
+
+
+### Class Imbalance and Class Weighting
+
+Class imbalance occurs when one outcome class contains substantially more observations than the other. In this situation, the majority class may have a greater overall influence on model fitting because it contributes more observations to the training data. A model may therefore perform well for the majority class but identify relatively few observations from the minority class.
+
+Class weighting is one method used to address this problem. It changes the relative contribution of the classes during model fitting by giving greater importance to errors involving the minority class. This allows the minority class to have a stronger influence on model optimisation without changing the number of observations in the dataset.
+
+
+
+## Random Forest Feature Importance
+
+Random Forest feature importance is used to show how much each predictor contributes to the fitted model. In this study, impurity-based feature importance was used.
+
+
+For classification trees, node impurity is measured using Gini impurity:
+
+\begin{equation}
+G = 1-\sum_{i=1}^{k}p_i^2,
+\label{eq:gini_impurity}
+\end{equation}
+
+where \(p_i\) is the proportion of observations in class \(i\), and \(k\) is the total number of classes. A lower Gini impurity means that most observations in the node belong to the same class, and a higher value means that the node contains a greater mix of classes.
+
+For a predictor used in a tree split, its importance contribution is based on the weighted reduction in Gini impurity produced by that split. The importance of each predictor is calculated by adding these weighted impurity reductions across all relevant nodes and averaging them across all trees in the Random Forest [@Louppe2013, p. 2].
+
+A higher feature importance score indicates that the predictor made a larger contribution to the fitted model. However, impurity-based importance does not show whether a predictor has a positive or negative relationship with the outcome. It also does not represent a causal effect.
+
+
+
+
+## Classification Performance Metrics
+
+The following table summarises the classification performance metrics used in this study, including accuracy, precision, recall, and F1 score [@Powers2020, pp. 38--39; @Erickson2021, p. 3], as well as AUC [@Huang2005, p. 301].
+
+\begin{table}[ht!]
+\centering
+\small
+\renewcommand{\arraystretch}{1.4}
+
+\begin{tabular}{
+|p{0.25\textwidth}
+|p{0.47\textwidth}
+|p{0.18\textwidth}|
+}
+\hline
+\textbf{Metric} & \textbf{Description} & \textbf{Formula} \\
+\hline
+
+Accuracy &
+Proportion of all observations that are correctly classified. &
+$\frac{TP+TN}{TP+TN+FP+FN}$ \\
+\hline
+
+Precision &
+Proportion of predicted positive observations that are actually positive. &
+$\frac{TP}{TP+FP}$ \\
+\hline
+
+Recall &
+Proportion of actual positive observations that are correctly predicted as positive. &
+$\frac{TP}{TP+FN}$ \\
+\hline
+
+F1 score &
+Harmonic mean of precision and recall. &
+$2\times\frac{\text{Precision}\times\text{Recall}}
+{\text{Precision}+\text{Recall}}$ \\
+\hline
+
+Area Under the Receiver Operating Characteristic Curve (AUC) &
+"Probability that a randomly chosen negative example will have a smaller estimated probability of belonging to the positive class than a randomly chosen positive example." &
+Area under the ROC curve \\
+\hline
+
+\end{tabular}
+
+\caption{Definitions of classification performance metrics.}
+\label{tab:classification_metrics}
+\end{table}
+
+
+
+
+
+# Methods
+
+
+This study examines self-isolation from two related but different perspectives: whether individuals were willing to self-isolate and whether they believed that self-isolation would be feasible in their daily lives. Previous studies have mainly examined willingness, compliance, or other isolation-related outcomes separately, and there is limited evidence directly comparing willingness and perceived feasibility within the same population. Therefore, the two outcomes were analysed separately in this study, and their important associated factors were compared. The methods used for this analysis are described below.
+
+
+
+## Analysis Workflow
+
+Figure \ref{fig:analysis-workflow} summarises the overall analysis process.
+
+\begin{figure}[H]
+\centering
+\small
+
+\begin{tikzpicture}[
+  node distance=0.42cm,
+  process/.style={
+    draw,
+    rounded corners,
+    align=left,
+    text width=12.2cm,
+    minimum height=0.92cm,
+    inner sep=5pt
+  },
+  arrow/.style={
+    ->,
+    thick
+  }
+]
+
+\node[process] (step0) {
+\textbf{Step 0. Replication study and preliminary exploration}\\
+Implemented the modelling workflow of Ryan et al. in Python and compared the original five-level perceived feasibility and willingness responses in the China and Australia samples using row-percentage heatmaps.
+};
+
+\node[process, below=of step0] (step1) {
+\textbf{Step 1. Preliminary exploration and China variable selection}\\
+Compared the original feasibility and willingness responses in the China and Australia samples, then selected the China outcome and predictor variables.
+};
+
+\node[process, below=of step1] (step2) {
+\textbf{Step 2. Variable processing and data cleaning}\\
+Recoded the two original outcome variables into binary outcomes, recoded the selected predictors, applied complete-case filtering and checked changes in variable distributions.
+};
+
+\node[process, below=of step2] (step3) {
+\textbf{Step 3. Model-ready dataset preparation}\\
+Converted categorical predictors into dummy variables and prepared a common predictor matrix and separate outcome vectors for perceived feasibility and willingness.
+};
+
+\node[process, below=of step3] (step4) {
+\textbf{Step 4. Jointly stratified data split}\\
+Split the data into training and independent test sets using an 80:20 ratio while preserving the joint distribution of the two outcomes.
+};
+
+\node[process, below=of step4] (step5) {
+\textbf{Step 5. Model development and cross-validation}\\
+Fitted Logistic Regression and Random Forest separately for both outcomes, conducted five-fold stratified cross-validation and selected model settings using mean AUC.
+};
+
+\node[process, below=of step5] (step6) {
+\textbf{Step 6. Independent test evaluation}\\
+Refitted the selected models using the complete training set and evaluated their performance once on the independent test set.
+};
+
+\node[process, below=of step6] (step7) {
+\textbf{Step 7. Random Forest feature importance comparison}\\
+Fitted the selected Random Forest models 100 times, calculated median importance and quartiles, combined the Top-10 predictors and compared importance differences between the two outcomes.
+};
+
+\draw[arrow] (step0) -- (step1);
+\draw[arrow] (step1) -- (step2);
+\draw[arrow] (step2) -- (step3);
+\draw[arrow] (step3) -- (step4);
+\draw[arrow] (step4) -- (step5);
+\draw[arrow] (step5) -- (step6);
+\draw[arrow] (step6) -- (step7);
+
+\end{tikzpicture}
+
+\normalsize
+\caption{Overall workflow for the replication study and main China analysis.}
+\label{fig:analysis-workflow}
+\end{figure}
+
+
+
+
+## Replication Study
+
+Before conducting the main China analysis, a replication of Ryan et al. [-@Ryan2025] was completed as methodological preparation. The replication was conducted in Python, with the code organised and executed in Jupyter Notebook. The Australian survey and mask-policy data were cleaned and combined, the behavioural outcomes and mandate periods were constructed, and the processed data were divided into training and independent test sets. Logistic Regression, Classification Tree, Random Forest and XGBoost were compared using five-fold cross-validation and independent test-set evaluation. XGBoost feature importance was also examined across repeated model runs to compare important predictors before and after mask mandates. The reproduced results were broadly similar to those reported by Ryan et al. [-@Ryan2025]. Random Forest and XGBoost generally showed stronger predictive performance than Logistic Regression and Classification Tree, while the feature importance results showed that some important predictors were shared across the two mandate periods and that the relative importance of other predictors changed.
+
+
+## Data Source
+
+This study used the China sample from the Imperial College London YouGov COVID-19 Behaviour Tracker [@Jones2020]. The tracker was developed through a partnership between YouGov and the Institute of Global Health Innovation at Imperial College London. It collected repeated online survey data from the general public across multiple countries to examine how people responded to COVID-19.
+
+The raw China dataset contained 15985 responses and 266 variables collected from April to September 2020. It included demographic, household, employment, contact, health, testing, protective behaviour, self-isolation and survey-time information. The outcome and predictor variables used in this study were derived from these survey data.
+
+
+
+## Data Processing
+
+Before variable processing, variables with less than 10% missing values were considered for inclusion. This produced 64 candidate columns. Six columns were then excluded because they were not suitable for the predictive analysis. For example, `RecordNo` was an administrative identifier, `weight` was excluded because survey weights were not applied in the modelling, and `i13_health` overlapped with the selected handwashing and hand-sanitiser variables. After these exclusions, 58 raw survey columns were retained for further processing. Appendix A.1 lists the retained raw survey columns and the six excluded columns, together with the reason for each exclusion.
+
+Appendix A.2 provides the names and meanings of the final analysis variables, together with the corresponding original survey variables and their processing.
+
+
+
+### Outcome Variables
+
+Two binary outcome variables were created to represent perceived feasibility of self-isolation and willingness to self-isolate. The original survey questions were:
+
+- **Perceived feasibility (`i10_health`):** “If you were advised to do so by a healthcare professional or public health authority, how easy or difficult would it be for you to self-isolate for 7 days?”
+
+- **Willingness (`i11_health`):** “If you were advised to do so by a healthcare professional or public health authority, to what extent are you willing or not willing to self-isolate for 7 days?”
+
+Both questions used five ordered response categories and an additional "Not sure" category. The five ordered responses were first coded from 1 to 5, with higher scores representing greater perceived feasibility or greater willingness.
+
+| Score | Perceived feasibility response | Willingness response |
+|:---:|---|---|
+| 1 | Very difficult | Very unwilling |
+| 2 | Somewhat difficult | Somewhat unwilling |
+| 3 | Neither easy nor difficult | Neither willing nor unwilling |
+| 4 | Somewhat easy | Somewhat willing |
+| 5 | Very easy | Very willing |
+
+The two five-level variables were then converted into binary outcomes using the same threshold:
+
+- scores of 4 or 5 were coded as 1, representing a positive response;
+- scores of 1, 2 or 3 were coded as 0, representing a neutral or negative response;
+- "Not sure" responses were treated as missing.
+
+Respondents were retained only if they had valid values for both binary outcomes. This produced an outcome-valid dataset of 14512 respondents. The original survey variables and the coding used to construct the two binary outcomes are provided in Appendix A.2.
+
+
+
+
+
+
+### Predictor Variables
+
+The selected predictors were organised into six broad groups: demographics and household, employment, protective behaviours, contacts and mobility, health and COVID-19 experience, and time. These groups were also used to present the Random Forest feature importance results. Full variable definitions, original survey variables and processing details are provided in Appendix A.2.
+
+
+- **Demographics and household:** This group included age, gender, household size and the number of children in the household. Age and household size were treated as numeric predictors. For household size, the "8 or more" category was coded as 8. The number of children was grouped into no children, one child, and two or more children.
+
+- **Employment:** This group included indicators of respondents' employment status. Because employment status was recorded as a multi-select question, each selected employment category was represented as a binary indicator.
+
+- **Protective behaviours:** This group included 18 items measuring protective behaviours during the previous seven days, such as wearing a face mask, washing hands and avoiding public transport. The ordered responses were recoded so that higher values represented more frequent behaviour.
+
+- **Contacts and mobility:** This group included the number of physical contacts within the household, the number of physical contacts outside the household, and the number of times the respondent left home. These variables were treated as numeric predictors.
+
+- **Health and COVID-19 experience:** This group included personal COVID-19 testing, household COVID-19 testing, COVID-like symptom status and comorbidity status. Testing variables were grouped into categories such as positive, negative, pending, not tested and not sure, depending on the original response options. COVID-like symptom status was coded according to whether respondents reported at least one relevant symptom or selected "None of these". Comorbidity status was coded according to whether respondents reported at least one diagnosed health condition, selected "None of these", or preferred not to say. Contradictory symptom or comorbidity responses were treated as missing.
+
+- **Time:** This group was represented by survey wave. It was treated as a categorical predictor and later converted into dummy variables to represent differences across survey periods.
+
+
+
+
+### Missing Data and Complete-Case Dataset
+
+The final analysis dataset contained 14512 observations and 39 variables, including two binary outcome variables and 37 predictors. Six predictors contained missing values, while the remaining 33 variables had no missing values. Complete-case filtering was applied across all 39 analysis variables. Missingness before complete-case filtering is reported in Appendix B.2.
+
+After complete-case filtering, the analytic dataset contained 13114 respondents, retaining 90.37% of the outcome-valid sample. The complete-case filtering results are summarised in Appendix B.3. To assess whether filtering changed the distributions of the variables, numeric variables were compared using their means, medians and standard deviations, while categorical variables were compared using response proportions. Detailed comparisons are provided in Appendices B.4 and B.5.
+
+Categorical predictors were then converted into dummy variables. One category was used as the reference category for each categorical predictor and was not included as a separate dummy variable. The classification and modelling treatment of numeric, binary and categorical variables are provided in Appendix B.1. The final model-ready dataset contained 13114 observations and 113 variables, with no remaining missing values.
+
+
+
+
+
+## Data Splitting and Model Dataset Preparation
+
+The model-ready dataset was divided into training and independent test sets using an 80:20 split. A joint stratification variable based on the four combinations of the two binary outcomes was used to preserve their individual and joint distributions (see Appendices C.1 and C.2). The split used `train_test_split` with `random_state=42`, producing 10491 training observations and 2623 test observations. The training set was used for cross-validation and tuning, while the test set was reserved for final evaluation.
+
+For model preparation, both outcomes were removed from the predictor matrix, leaving 111 predictor columns. Separate outcome vectors were created for perceived feasibility and willingness (see Appendix C.3).
+
+
+
+
+
+## Model Development and Evaluation
+
+### Five-Fold Stratified Cross-Validation
+
+
+
+Model development and internal validation were conducted using five-fold stratified cross-validation on the training set (see Appendix D.1). The procedure was carried out separately for perceived feasibility and willingness. For each outcome, the training data were divided into five approximately equal folds while preserving the proportion of the two outcome classes within each fold. In each iteration, four folds were used to fit the model and the remaining fold was used for validation. The procedure was repeated five times so that each observation was included in the validation fold once. Performance was then averaged across the five validation folds.
+
+
+
+### Model Tuning
+
+Because both outcomes had more positive than negative observations, class weighting was considered for both Logistic Regression and Random Forest. Two settings were compared: `None` and `balanced`. Under `None`, all observations received the same individual weight. Under `balanced`, class weights were calculated inversely according to class frequencies, so observations from the minority class received greater weight during model fitting.
+
+
+- **Logistic Regression:** Predictor standardisation and Logistic Regression were combined within a modelling pipeline. Standardisation was used because the predictors were measured on different scales. `StandardScaler` transformed each model column by subtracting its mean and dividing by its standard deviation, so that the transformed column had an approximate mean of 0 and standard deviation of 1. This placed the model columns on a comparable scale, which supported the optimisation process and prevented predictors with larger numeric ranges from having a greater influence on the regularisation of the model. `StandardScaler` was fitted only to the training portion of each cross-validation fold and then applied to the corresponding validation portion, reducing the risk of information leakage. 
+
+The following settings were specified:
+
+  - maximum number of optimisation iterations (`max_iter`): 5000;
+  - class weighting (`class_weight`): `None` and `balanced`.
+
+The maximum number of iterations was fixed at 5000 to support model convergence. For each outcome, the class-weight setting with the highest mean cross-validation AUC was selected. The detailed Logistic Regression settings are provided in Appendix D.2.
+
+
+
+- **Random Forest:** Randomised hyperparameter search was used to evaluate alternative Random Forest configurations (see Appendix D.3). The search considered the following values:
+
+  - number of trees (`n_estimators`): 300, 500, 700 and 1000;
+  - maximum tree depth (`max_depth`): 10, 20, 30, 40 and no specified limit;
+  - minimum number of observations required to split an internal node (`min_samples_split`): 2, 5, 10 and 20;
+  - minimum number of observations required in a terminal node (`min_samples_leaf`): 1, 2, 4 and 8;
+  - number or proportion of predictors considered at each split (`max_features`): square root, base-2 logarithm, 50% and 75% of the available predictors;
+  - class weighting (`class_weight`): `None` and `balanced`.
+
+The number of trees controls how many decision trees are combined in the forest. Maximum tree depth, the minimum number of observations required for a split, and the minimum number required in a terminal node control tree complexity and help reduce overfitting. The `max_features` parameter controls how many predictors are considered at each split and increases variation between trees.
+
+For each outcome, 1000 randomly selected combinations from this parameter space were evaluated using five-fold stratified cross-validation (see Appendix D.3).
+
+For both Logistic Regression and Random Forest, tuning was conducted separately for perceived feasibility and willingness. For each outcome, the setting with the highest mean cross-validation AUC was selected (see Appendices D.2 and D.3).
+
+
+
+### Performance Evaluation
+
+Model performance was evaluated using AUC, accuracy, precision, recall and F1 score. AUC was calculated from the predicted probabilities and was used as the primary criterion for model selection because it evaluates how well a model distinguishes between the two classes across different classification thresholds. Unlike accuracy, which is calculated from class predictions at a selected threshold, AUC also reflects the ranking information contained in the predicted probabilities [@Huang2005, pp. 299--301].
+
+
+For accuracy, precision, recall and F1 score, predicted probabilities were converted into binary class predictions using a probability threshold of 0.50.
+
+During five-fold cross-validation, the mean and standard error of each metric were calculated across the five validation folds. After model selection, the selected Logistic Regression and Random Forest models were refitted using the complete training set and evaluated once on the independent test set. The selected Random Forest hyperparameters used for the final models are reported in Appendix D.4.
+
+
+
+
+## Random Forest Feature Importance
+
+The impurity-based feature importance analysis was conducted separately for perceived feasibility and willingness using the complete training set. For each outcome, the selected Random Forest parameters were kept fixed, and the model was fitted 100 times using different random seeds (see Appendix F.1).
+
+Some categorical predictors were represented by several dummy variables in the modelling dataset. Within each run, the importance values of dummy variables from the same original predictor were summed to obtain one variable-level importance value. The seven binary employment-status indicators were also combined because they represented responses from the same underlying multi-select employment-status question (see Appendix F.2).
+
+For each predictor, the median importance and the first and third quartiles were calculated across the 100 runs. Predictors were ranked by their median importance, and separate Top-10 lists were produced for perceived feasibility and willingness (see Appendix F.3).
+
+To compare the two outcomes, predictors appearing in either Top-10 list were combined into one set. Their median importance values and quartiles from both models were then displayed in a comparison plot (see Appendix F.4).
+
+The difference in median importance between the two outcomes was calculated as:
+
+\begin{equation}
+\text{Difference} = \text{Willingness importance} - \text{Feasibility importance}.
+\label{eq:importance_difference}
+\end{equation}
+
+A positive value indicates higher importance for willingness, while a negative value indicates higher importance for perceived feasibility. The ten predictors with the largest absolute differences were included in the difference plot (see Appendix F.5).
+
+
+
+
+
+
+# Results
+
+## Preliminary Exploration
+
+A preliminary exploration was conducted using the original five-level responses to examine the relationship between perceived feasibility and willingness to self-isolate. Row-percentage heatmaps were produced for the China sample and the Australia sample used in the replication study. The heatmaps and detailed interpretation are provided in Appendix G.
+
+
+## Model Performance
+
+The processes used to generate the cross-validation and independent test-set results are provided in Appendix E. 
+
+### Cross-Validation Performance
+
+Table \ref{tab:cv-performance} presents the mean five-fold cross-validation performance of Logistic Regression and Random Forest for perceived feasibility and willingness, with standard errors shown in parentheses.
+
+\begin{table}[H]
+\centering
+\resizebox{\linewidth}{!}{
+\begin{tabular}{llrrrrr}
+\hline
+Model & Outcome & AUC (SE) & Precision (SE) & Recall (SE) & Accuracy (SE) & F1 (SE) \\
+\hline
+LR & Feasibility & 0.622 (0.007) & \textbf{0.819 (0.005)} & 0.624 (0.004) & 0.604 (0.005) & 0.708 (0.004) \\
+RF & Feasibility & \textbf{0.636 (0.007)} & 0.774 (0.000) & \textbf{0.997 (0.001)} & \textbf{0.773 (0.001)} & \textbf{0.871 (0.000)} \\
+LR & Willingness & 0.704 (0.009) & \textbf{0.912 (0.003)} & 0.689 (0.006) & 0.678 (0.005) & 0.785 (0.004) \\
+RF & Willingness & \textbf{0.710 (0.011)} & 0.856 (0.001) & \textbf{0.998 (0.001)} & \textbf{0.854 (0.001)} & \textbf{0.921 (0.000)} \\
+\hline
+\end{tabular}
+}
+\caption{Five-fold cross-validation performance of Logistic Regression and Random Forest.}
+\label{tab:cv-performance}
+\end{table}
+
+
+
+### Independent Test-Set Performance
+
+Table \ref{tab:test-performance} presents the performance of the selected Logistic Regression and Random Forest models on the independent test set.
+
+\begin{table}[H]
+\centering
+\resizebox{0.9\linewidth}{!}{
+\begin{tabular}{llrrrrr}
+\hline
+Model & Outcome & AUC & Precision & Recall & Accuracy & F1 \\
+\hline
+LR & Feasibility & 0.615 & \textbf{0.824} & 0.637 & 0.616 & 0.719 \\
+RF & Feasibility & \textbf{0.625} & 0.773 & \textbf{0.994} & \textbf{0.771} & \textbf{0.870} \\
+LR & Willingness & \textbf{0.691} & \textbf{0.905} & 0.688 & 0.672 & 0.782 \\
+RF & Willingness & 0.688 & 0.855 & \textbf{0.993} & \textbf{0.851} & \textbf{0.919} \\
+\hline
+\end{tabular}
+}
+\caption{Independent test-set performance of Logistic Regression and Random Forest.}
+\label{tab:test-performance}
+\end{table}
+
+
+
+## Random Forest Feature Importance Results
+
+The process used to generate the Random Forest feature importance plots is provided in Appendix F.
+
+Figure \ref{fig:rf-importance-comparison} presents the variable-level Random Forest feature importance for perceived feasibility and willingness. The figure includes the union of the Top-10 predictors for the two outcomes. The bars represent the median importance across 100 runs, and the error bars show the first and third quartiles.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{results/rf_feature_importance_plots/rf_feasibility_willingness_top10_variable_comparison.png}
+\caption{Comparison of variable-level Random Forest feature importance for perceived feasibility and willingness.}
+\label{fig:rf-importance-comparison}
+\end{figure}
+
+
+
+Figure \ref{fig:rf-importance-differences} presents the ten predictors with the largest absolute differences in median feature importance between the two outcomes. Positive values indicate higher importance for willingness, while negative values indicate higher importance for perceived feasibility.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{results/rf_feature_importance_plots/rf_variable_level_top10_importance_differences.png}
+\caption{Differences in median Random Forest feature importance between willingness and perceived feasibility.}
+\label{fig:rf-importance-differences}
+\end{figure}
+
+
+
+
+# Discussion
+
+
+## Key Findings
+
+### Model Performance
+
+Random Forest achieved higher recall, accuracy and F1 score than Logistic Regression for both outcomes in cross-validation and independent testing, while Logistic Regression achieved higher precision. The AUC differences were small, but Random Forest achieved a higher AUC in three of the four comparisons.
+
+The model results showed that willingness was more predictable than perceived feasibility. This may be because the dataset lacked some practical constraints that could be more closely related to perceived feasibility. Overall, Random Forest showed slightly stronger predictive performance than Logistic Regression. The combination of higher recall and lower precision suggests that Random Forest identified a greater proportion of positive observations, but also produced more false-positive classifications. In contrast, Logistic Regression made more conservative positive predictions. The similar performance patterns observed in cross-validation and independent test-set evaluation suggest that the model results were relatively stable when applied to unseen data.
+
+
+### Random Forest Feature Importance
+
+The combined comparison contained 13 predictors because the Top-10 lists for perceived feasibility and willingness were not identical. Seven predictors appeared in both Top-10 lists, while each outcome had three predictors that did not appear in the other list. This shows that the two outcomes shared several important predictors, but the relative contribution of some predictors differed between the models. The large number of protective behaviour variables in the combined list suggests that both outcomes were connected to broader patterns of protective behaviour.
+
+Survey wave had the highest importance in the feasibility model and also showed the largest difference between the two models. This may reflect changes across the survey period in public health conditions, isolation requirements, community support and other practical circumstances. These changes could affect whether respondents felt that self-isolation was possible in their daily lives. Employment status was also more important for perceived feasibility. Employment may represent a practical constraint because work arrangements, the ability to work from home, access to leave and the need to maintain income could affect whether a person felt able to self-isolate.
+
+Age, non-household contacts and avoiding contact with symptomatic or exposed people were more important in the willingness model. Age may be related to differences in perceived health risk and attitudes towards protective guidance. Non-household contacts may reflect how often respondents interacted with people outside their home and how relevant self-isolation appeared to their usual social or work activities. Avoiding contact with symptomatic or exposed people may reflect a stronger motivation to reduce infection risk, which could also be related to willingness to self-isolate.
+
+However, the differences in feature importance between the two models were generally modest, and most absolute differences were below 0.01. Therefore, the findings do not suggest that perceived feasibility and willingness were explained by completely different sets of predictors. Instead, they shared many important predictors, while some practical, demographic and behavioural factors had different levels of importance. This supports treating perceived feasibility and willingness as related but distinct outcomes.
+
+
+
+
+## Limitations
+
+This study has several limitations. First, the online survey may not fully represent all Chinese residents because people with limited internet access or digital skills may have been less likely to participate. Some respondents may also have chosen answers that they considered more socially acceptable, limiting the accuracy and generalisability of the findings.
+
+Second, the survey did not include more practical conditions that may affect the feasibility of self-isolation. For example, the dataset provided limited information about the ability to work from home, possible income loss, housing conditions, and support from the local community. These factors may be especially important for people who are willing to self-isolate but do not believe that it is practically possible. The dataset also provided limited information about self-isolation policies. Isolation requirements may have changed across survey waves and may have differed between locations. Although survey wave was included as a predictor, it could not clearly measure the effects of local policies, community support, or local COVID-19 conditions.
+
+Third, several limitations were related to data processing. Both outcomes showed clear class imbalance, as the positive class was much larger than the negative class, especially for willingness. Class weighting was included in the Random Forest tuning process, but the selected models for both outcomes used no class weighting because this setting achieved the best cross-validation AUC. Under the classification threshold of 0.50, the selected Random Forest models achieved positive-class recall values of 0.994 for feasibility and 0.993 for willingness on the test set. However, their precision and accuracy values were close to the proportions of positive cases in the corresponding test sets. Together with the near-perfect recall values, this pattern suggests that the models classified most respondents as positive. In an imbalanced dataset, predicting every observation as the majority class can produce an accuracy equal to the proportion of that class [@Richardson2024]. In addition, the original five response levels were converted into binary outcomes. This made the outcomes easier to model and compare, but it removed differences between the original response levels. For example, neutral and negative responses were combined into the same class, while “willing” and “very willing” responses were also treated as the same outcome.
+
+Fourth, Logistic Regression and Random Forest did not receive the same breadth of hyperparameter tuning. Logistic Regression tuning was limited to class weighting, while Random Forest was tuned across several tree and ensemble parameters. This may have given Random Forest an advantage. Despite the broader tuning, it did not consistently show a substantial improvement over Logistic Regression, so the comparison should be interpreted with caution.
+
+
+
+## Future Work
+
+Future research could collect data from a more representative sample of Chinese residents by combining online surveys with other data collection methods. More detailed information about practical barriers should also be included, such as the ability to work from home, income protection, housing conditions, caring responsibilities, and access to community support. Survey data could also be linked with local self-isolation policies and local COVID-19 conditions to examine how willingness and perceived feasibility changed across different locations and time periods.
+
+Future studies could also consider models that keep the original five response levels, such as ordinal classification models, rather than converting the outcomes into binary classes. For the class imbalance problem, different class-weighting methods, resampling methods, and classification thresholds could be compared. Model performance should also be evaluated using class-specific measures to provide a more balanced assessment of performance across the two classes.
+
+A more balanced model comparison could apply a more comparable breadth of hyperparameter tuning to Logistic Regression and Random Forest. For Logistic Regression, future analysis could tune regularisation strength and penalty settings in addition to class weighting. This would reduce the difference in tuning effort between the two models.
+
+
+## Conclusion
+
+This study examined the factors associated with willingness to self-isolate and perceived feasibility of self-isolation among Chinese residents during COVID-19. The findings identified several important predictors for both outcomes, especially protective behaviour variables. The comparison also showed that many predictors were shared, but their relative importance was not always the same.
+
+Survey wave and employment status were more important for perceived feasibility, suggesting that respondents' work situations and changes over the survey period may have influenced how easy or difficult they expected self-isolation to be. Age, non-household contacts and avoiding contact with symptomatic or exposed people were more important for willingness, suggesting a stronger connection with risk awareness. However, most differences were modest, so willingness and perceived feasibility should be understood as related but distinct aspects of self-isolation. Willingness was also more predictable than perceived feasibility, possibly because the dataset included limited information about practical barriers. Future research should therefore include more detailed measures of these barriers and local self-isolation conditions.
+
+
+
+
+# Acknowledgements
+
+I acknowledge that I used AI-assisted tools to help improve the wording of some sentences, search for relevant literature, adjust the code used to generate figures, and refine the Random Forest hyperparameter selection process.
+
+I would like to express my sincere gratitude to my supervisor, Anthony Mays, for his guidance, valuable feedback, and continued support throughout this project. His explanations and advice helped me develop a better understanding of the research and report-writing process. I gained a great deal from his guidance and from completing both the presentation and the final report during this term.
+
+I would also like to thank the teaching assistants, Liangning Jin and Richard Bailey, for their support and assistance throughout the term. I am grateful to Liangning Jin for patiently answering many of my questions after the meetings.
+
+The code and supporting materials for this project are available in the [GitHub repository](https://github.com/YuweiFang-27/MDS_COVID_FinalReport_Fang_Y).
+
+
+# References
+
+<div id="refs"></div>
+
+
+
+
+
+
+
+\newpage
+
+# Appendix
+
+All file paths mentioned in the appendix are located in the `Covid_Fang_Y / Final Report` directory.
+
+
+## Appendix A: Variable Definitions and Processing
+
+### A.1 Selection of Raw Survey Variables
+
+The relevant files were:
+
+- `code/00_missingvalue_check.ipynb`: calculated missing values for the 266 original columns.
+
+- `code/0_variable_definition.ipynb`: selected the 58 raw survey columns.
+
+- `data/data_processed/df_project_raw.csv`: stored the selected raw survey columns.
+
+
+Variables with less than 10% missing values were considered for inclusion. This produced 64 candidate columns. After excluding six administrative, weighting or conceptually overlapping variables, 58 original survey columns were retained for further processing.
+
+
+| Variable group | Original survey columns | Number of columns | Missing percentage |
+|---|---|:---:|:---:|
+| 1. Self-isolation outcomes | `i10_health`, `i11_health` | 2 | 6.26% |
+| 2. Protective behaviours | `i12_health_1`–`i12_health_8`, `i12_health_11`–`i12_health_20` | 18 | 0.00% |
+| 3. Demographics | `age`, `gender` | 2 | 0.00% |
+| 4. Household composition | `household_size`, `household_children` | 2 | 0.00% |
+| 5. Employment | `employment_status_1`–`employment_status_7` | 7 | 0.00% |
+| 6. Contacts and mobility | `i1_health`, `i2_health`, `i7a_health` | 3 | 0.00% |
+| 7. Personal COVID-19 testing | `i3_health` | 1 | 3.67% |
+| 8. Household COVID-19 testing | `i4_health` | 1 | 3.80% |
+| 9. COVID-like symptoms | `i5_health_1`–`i5_health_5`, `i5_health_99` | 6 | 2.44% |
+| 10. Comorbidities | `d1_health_1`–`d1_health_13`, `d1_health_98`, `d1_health_99` | 15 | 0.11% |
+| 11. Survey time | `qweek` | 1 | 0.00% |
+| **Total** |  | **58** |  |
+
+
+
+Six additional columns met the missingness criterion but were not included in the project dataset:
+
+- `RecordNo` was excluded because it was an administrative identifier and did not contain information relevant to the analysis.
+- `endtime` was excluded because `qweek` was used to represent the survey period.
+- `city` was excluded because it contained many location categories, which would produce a large number of dummy variables. City-level comparisons were also outside the scope of this study.
+- `weight` was excluded because survey weights were not applied in the predictive modelling analysis.
+- `i9_health` was excluded because it overlapped conceptually with the selected self-isolation willingness and feasibility outcomes.
+- `i13_health` was excluded because it measured the number of times respondents washed their hands or used hand sanitiser and therefore overlapped with `i12_health_2` and `i12_health_3`.
+
+Variables with 10% or more missing values were not considered for inclusion in the initial project dataset.
+
+
+
+
+### A.2 Definitions, Processing and Coding of Analysis Variables
+
+
+The relevant files were:
+
+- `code/1_outcome_processing.ipynb`: recoded perceived feasibility and willingness into two binary outcome variables.
+
+- `code/2_predictor_processing.ipynb`: processed the predictor variables and created the derived variables used in the analysis. This included converting age, household size and contact variables into numeric variables, extracting the survey-wave number, recoding employment variables into binary values, grouping household children, and combining testing, symptom and comorbidity responses into new categorical variables.
+
+- `code/3_final_processing.ipynb`: selected the 39 final analysis variables, excluding the original variables that had been replaced by processed variables.
+
+
+Appendix A.2 defines the 39 final analysis variables before dummy-variable encoding. Table \ref{tab:analysis-variable-definitions} provides each analysis variable and its meaning, while the following table links processed variables to their original survey variables and summarises the processing applied.
+
+- Self-isolation outcomes: perceived feasibility and willingness to self-isolate (variables 1–2);
+- Demographics and household: age, gender, household size and number of children in the household (variables 3–6);
+- Employment: seven employment-status indicators (variables 7–13);
+- Protective behaviours: 18 protective behaviour items (variables 14–31);
+- Contacts and mobility: household contacts, non-household contacts and times left home (variables 32–34);
+- Health and COVID-19 experience: personal COVID-19 testing, household COVID-19 testing, COVID-like symptoms and comorbidities (variables 35–38);
+- Time: survey wave (variable 39).
+
+
+\begingroup
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+
+\begin{longtable}{
+>{\centering\arraybackslash}p{0.05\textwidth}
+p{0.27\textwidth}
+p{0.60\textwidth}
+}
+
+\caption{Definitions of the analysis variables before dummy-variable encoding.}
+\label{tab:analysis-variable-definitions}\\
+
+\hline
+\textbf{No.} &
+\textbf{Analysis variable} &
+\textbf{Variable meaning} \\
+\hline
+\endfirsthead
+
+\multicolumn{3}{c}{\textit{Table \thetable{} continued}}\\
+\hline
+\textbf{No.} &
+\textbf{Analysis variable} &
+\textbf{Variable meaning} \\
+\hline
+\endhead
+
+\hline
+\multicolumn{3}{r}{\textit{Continued on the next page}}\\
+\endfoot
+
+\hline
+\endlastfoot
+
+1 &
+\texttt{feasibility\_binary} &
+Binary outcome representing the respondent's perceived feasibility of self-isolating for seven days if advised to do so by a healthcare professional or public health authority. \\
+
+2 &
+\texttt{willingness\_binary} &
+Binary outcome representing the respondent's willingness to self-isolate for seven days if advised to do so by a healthcare professional or public health authority. \\
+
+3 &
+\texttt{age\_num} &
+Age of the respondent. \\
+
+4 &
+\texttt{gender} &
+Gender of the respondent. \\
+
+5 &
+\texttt{household\_size\_num} &
+Number of people living in the respondent's household. \\
+
+6 &
+\texttt{household\_children\_group} &
+Grouped number of children under 18 living in the respondent's household. \\
+
+7 &
+\texttt{employment\_status\_1} &
+Indicator of full-time employment. \\
+
+8 &
+\texttt{employment\_status\_2} &
+Indicator of part-time employment. \\
+
+9 &
+\texttt{employment\_status\_3} &
+Indicator of being a full-time student. \\
+
+10 &
+\texttt{employment\_status\_4} &
+Indicator of being retired. \\
+
+11 &
+\texttt{employment\_status\_5} &
+Indicator of being unemployed. \\
+
+12 &
+\texttt{employment\_status\_6} &
+Indicator of not working. \\
+
+13 &
+\texttt{employment\_status\_7} &
+Indicator of another employment status. \\
+
+14 &
+\texttt{i12\_health\_1} &
+Frequency of wearing a face mask outside the home. \\
+
+15 &
+\texttt{i12\_health\_2} &
+Frequency of washing hands with soap and water. \\
+
+16 &
+\texttt{i12\_health\_3} &
+Frequency of using hand sanitiser. \\
+
+17 &
+\texttt{i12\_health\_4} &
+Frequency of covering the nose and mouth when sneezing or coughing. \\
+
+18 &
+\texttt{i12\_health\_5} &
+Frequency of avoiding contact with people who had symptoms or may have been exposed to COVID-19. \\
+
+19 &
+\texttt{i12\_health\_6} &
+Frequency of avoiding going out in general. \\
+
+20 &
+\texttt{i12\_health\_7} &
+Frequency of avoiding hospitals or other healthcare settings. \\
+
+21 &
+\texttt{i12\_health\_8} &
+Frequency of avoiding public transport. \\
+
+22 &
+\texttt{i12\_health\_11} &
+Frequency of avoiding having guests at home. \\
+
+23 &
+\texttt{i12\_health\_12} &
+Frequency of avoiding small social gatherings involving no more than two people. \\
+
+24 &
+\texttt{i12\_health\_13} &
+Frequency of avoiding medium-sized social gatherings involving between three and ten people. \\
+
+25 &
+\texttt{i12\_health\_14} &
+Frequency of avoiding large social gatherings involving more than ten people. \\
+
+26 &
+\texttt{i12\_health\_15} &
+Frequency of avoiding crowded areas. \\
+
+27 &
+\texttt{i12\_health\_16} &
+Frequency of avoiding going to shops. \\
+
+28 &
+\texttt{i12\_health\_17} &
+Frequency of sleeping in a separate bedroom when the respondent would normally share a bedroom. \\
+
+29 &
+\texttt{i12\_health\_18} &
+Frequency of eating separately at home when the respondent would normally eat with other people. \\
+
+30 &
+\texttt{i12\_health\_19} &
+Frequency of cleaning frequently touched surfaces in the home. \\
+
+31 &
+\texttt{i12\_health\_20} &
+Frequency of avoiding touching objects in public. \\
+
+32 &
+\texttt{i1\_health} &
+Approximate number of household members with whom the respondent had physical contact within two metres or six feet. \\
+
+33 &
+\texttt{i2\_health} &
+Approximate number of people outside the household with whom the respondent had physical contact within two metres or six feet. \\
+
+34 &
+\texttt{i7a\_health} &
+Number of times the respondent left home during the previous day. \\
+
+35 &
+\texttt{personal\_test\_status} &
+Personal COVID-19 testing status during the previous seven days. \\
+
+36 &
+\texttt{household\_test\_status} &
+COVID-19 testing status of another person in the respondent's household during the previous seven days. \\
+
+37 &
+\texttt{covid\_symptom\_status} &
+Indicator of whether the respondent reported at least one selected COVID-like symptom. \\
+
+38 &
+\texttt{comorbidity\_status} &
+Indicator of whether the respondent reported at least one selected diagnosed health condition. \\
+
+39 &
+\texttt{survey\_wave} &
+Survey wave in which the respondent completed the survey. \\
+
+\end{longtable}
+
+\endgroup
+
+
+
+The table below lists the variables whose analysis names differ from the original survey variable names.
+
+| Analysis variable | Original variable(s) | Processing |
+|---|---|---|
+| `feasibility_binary` | `i10_health` | “Very easy” and “Somewhat easy” were coded as 1, while “Neither easy nor difficult”, “Somewhat difficult” and “Very difficult” were coded as 0. “Not sure” was treated as missing. |
+| `willingness_binary` | `i11_health` | “Very willing” and “Somewhat willing” were coded as 1, while “Neither willing nor unwilling”, “Somewhat unwilling” and “Very unwilling” were coded as 0. “Not sure” was treated as missing. |
+| `age_num` | `age` | The original age values were converted into numeric form and the variable was renamed as `age_num`. |
+| `household_size_num` | `household_size` | Responses from 1 to 7 were retained, while “8 or more” was coded as 8. |
+| `household_children_group` | `household_children` | Grouped into no children, one child, and two or more children. |
+| `personal_test_status` | `i3_health` | The original response descriptions were converted into shorter and more readable category labels: `positive`, `negative`, `pending`, `not_tested` and `not_sure`. |
+| `household_test_status` | `i4_health` | The original response descriptions were converted into shorter and more readable category labels: `positive`, `negative`, `pending`, `not_tested` and `not_sure`. |
+| `covid_symptom_status` | `i5_health_1`–`i5_health_5`, `i5_health_99` | The six symptom items were combined into one variable indicating whether at least one selected COVID-like symptom was reported. Contradictory responses were treated as missing. |
+| `comorbidity_status` | `d1_health_1`–`d1_health_13`, `d1_health_98`, `d1_health_99` | The 15 comorbidity items were combined into one variable with `Yes`, `No` and `Prefer_not_to_say` categories. Contradictory responses were treated as missing. |
+| `survey_wave` | `qweek` | The survey-wave number was extracted from `qweek` and stored as `survey_wave`. |
+
+
+
+
+
+
+## Appendix B: Complete-Case Analysis and Model Encoding
+
+The relevant file were:
+
+- `code/3_final_processing.ipynb`: selected the 39 final analysis variables, examined their missingness, and created the complete-case dataset by removing observations with missing values in any selected variable. It compared numeric variables using means, medians and standard deviations before and after filtering. It also compared the percentage distributions of categorical variables. Finally, numeric and binary predictors were retained in their processed forms, while categorical predictors were converted into dummy variables.
+
+- `data/data_processed/df_model_ready.csv`: stored the final model-ready dataset after complete-case filtering and dummy-variable encoding.
+
+
+
+
+
+### B.1 Variable Types and Model Encoding
+
+
+| Variable type and modelling treatment | Variables |
+|---|---|
+| Numeric predictors | `age_num`, `household_size_num`, `i1_health`, `i2_health`, `i7a_health` |
+| Binary predictors retained as 0/1 | `employment_status_1`–`employment_status_7` |
+| Protective behaviour predictors treated as categorical and converted into dummy variables | `i12_health_1`–`i12_health_8`, `i12_health_11`–`i12_health_20` |
+| Other categorical predictors converted into dummy variables | `gender`, `household_children_group`, `personal_test_status`, `household_test_status`, `covid_symptom_status`, `comorbidity_status`, `survey_wave` |
+| Binary outcome variables | `feasibility_binary`, `willingness_binary` |
+
+Dummy-variable encoding was applied after complete-case filtering. The 37 predictors were converted into 111 model input columns. Together with the two binary outcome variables, the final model-ready dataset contained 113 variables.
+
+
+
+### B.2 Missingness Before Complete-Case Filtering
+
+Six of the 39 analysis variables contained missing values. The remaining 33 variables had no missing values.
+
+| Analysis variable | Missing observations | Missing percentage |
+|---|---:|---:|
+| `household_children_group` | 639 | 4.40% |
+| `household_size_num` | 503 | 3.47% |
+| `personal_test_status` | 418 | 2.88% |
+| `household_test_status` | 416 | 2.87% |
+| `covid_symptom_status` | 227 | 1.56% |
+| `comorbidity_status` | 16 | 0.11% |
+
+
+
+### B.3 Complete-Case Filtering Results
+
+The complete-case filtering results are summarised below.
+
+| Dataset stage | Observations | Variables |
+|---|---:|---:|
+| Before complete-case filtering | 14512 | 39 |
+| After complete-case filtering | 13114 | 39 |
+
+The complete-case dataset retained 90.37% of the outcome-valid sample.
+
+
+
+
+
+### B.4 Comparison of Numeric Variables Before and After Complete-Case Filtering
+
+\small
+
+| Analysis variable | Before mean | After mean | Before median | After median | Before SD | After SD |
+|---|---:|---:|---:|---:|---:|---:|
+| `age_num` | 32.68 | 33.02 | 30.00 | 31.00 | 10.93 | 11.02 |
+| `household_size_num` | 3.79 | 3.77 | 4.00 | 4.00 | 1.33 | 1.31 |
+| `i1_health` | 2.98 | 2.82 | 2.00 | 2.00 | 12.28 | 3.14 |
+| `i2_health` | 15.01 | 14.97 | 4.00 | 4.00 | 68.84 | 67.57 |
+| `i7a_health` | 1.89 | 1.84 | 1.00 | 1.00 | 4.03 | 3.45 |
+
+\normalsize
+
+
+### B.5 Comparison of Categorical Variables Before and After Complete-Case Filtering
+
+
+#### B.5.1 Outcomes
+
+| Analysis variable | Category | Before (%) | After (%) |
+|---|---|---:|---:|
+| `feasibility_binary` | Positive (1) | 76.34 | 77.08 |
+| `feasibility_binary` | Negative (0) | 23.66 | 22.92 |
+| `willingness_binary` | Positive (1) | 84.58 | 85.25 |
+| `willingness_binary` | Negative (0) | 15.42 | 14.75 |
+
+
+#### B.5.2 Other Categorical Predictors
+
+| Analysis variable | Category | Before (%) | After (%) |
+|---|---|---:|---:|
+| `gender` | Male | 55.80 | 55.35 |
+| `gender` | Female | 44.20 | 44.65 |
+| `household_children_group` | 0 | 38.06 | 39.63 |
+| `household_children_group` | 1 | 42.01 | 44.46 |
+| `household_children_group` | 2_or_more | 15.53 | 15.91 |
+| `household_children_group` | Missing | 4.40 | 0.00 |
+| `personal_test_status` | Not tested | 86.16 | 88.93 |
+| `personal_test_status` | Negative | 8.27 | 8.46 |
+| `personal_test_status` | Pending | 1.87 | 1.80 |
+| `personal_test_status` | Positive | 0.83 | 0.81 |
+| `personal_test_status` | Missing | 2.88 | 0.00 |
+| `household_test_status` | Not tested | 83.19 | 86.25 |
+| `household_test_status` | Negative | 8.77 | 9.16 |
+| `household_test_status` | Not sure | 3.05 | 2.46 |
+| `household_test_status` | Pending | 1.35 | 1.36 |
+| `household_test_status` | Positive | 0.78 | 0.78 |
+| `household_test_status` | Missing | 2.87 | 0.00 |
+| `covid_symptom_status` | No | 93.63 | 95.02 |
+| `covid_symptom_status` | Yes | 4.80 | 4.98 |
+| `covid_symptom_status` | Missing | 1.56 | 0.00 |
+| `comorbidity_status` | No | 83.54 | 83.73 |
+| `comorbidity_status` | Yes | 13.63 | 14.16 |
+| `comorbidity_status` | Prefer not to say | 2.71 | 2.10 |
+| `comorbidity_status` | Missing | 0.11 | 0.00 |
+
+
+#### B.5.3 Survey Wave
+
+| Survey wave | Before (%) | After (%) |
+|:---:|---:|---:|
+| 1 | 6.73 | 6.86 |
+| 2 | 6.67 | 6.62 |
+| 3 | 6.66 | 6.73 |
+| 4 | 6.81 | 6.94 |
+| 5 | 6.59 | 6.54 |
+| 6 | 6.70 | 6.72 |
+| 7 | 6.71 | 6.71 |
+| 8 | 6.75 | 6.59 |
+| 9 | 6.66 | 6.63 |
+| 10 | 6.64 | 6.57 |
+| 11 | 6.71 | 6.80 |
+| 12 | 6.61 | 6.51 |
+| 13 | 6.57 | 6.54 |
+| 14 | 6.68 | 6.73 |
+| 15 | 6.49 | 6.52 |
+
+
+
+
+#### B.5.4 Employment Status
+
+| Employment status | Before (%) | After (%) |
+|:---:|---:|---:|
+| `employment_status_1` | 64.89 | 66.22 |
+| `employment_status_2` | 10.88 | 10.63 |
+| `employment_status_3` | 18.37 | 18.32 |
+| `employment_status_4` | 3.23 | 3.23 |
+| `employment_status_5` | 5.08 | 4.60 |
+| `employment_status_6` | 3.30 | 3.13 |
+| `employment_status_7` | 2.02 | 1.43 |
+
+
+
+#### B.5.5 Selected Protective Behaviour Categories
+
+\mbox{}\par
+
+For each protective behaviour variable, only the response category with the largest absolute percentage-point difference between the before- and after-filtering datasets is presented.
+
+| Analysis variable | Category | Before (%) | After (%) |
+|---|---|---:|---:|
+| `i12_health_1` | Always | 68.31 | 68.76 |
+| `i12_health_2` | Frequently | 29.62 | 29.95 |
+| `i12_health_3` | Frequently | 29.22 | 29.45 |
+| `i12_health_4` | Always | 64.98 | 65.69 |
+| `i12_health_5` | Always | 62.54 | 63.39 |
+| `i12_health_6` | Always | 29.33 | 28.67 |
+| `i12_health_7` | Frequently | 26.23 | 26.57 |
+| `i12_health_8` | Frequently | 24.43 | 24.75 |
+| `i12_health_11` | Frequently | 25.32 | 25.74 |
+| `i12_health_12` | Frequently | 26.16 | 26.49 |
+| `i12_health_13` | Frequently | 23.77 | 24.17 |
+| `i12_health_14` | Always | 58.71 | 59.57 |
+| `i12_health_15` | Frequently | 28.32 | 28.66 |
+| `i12_health_16` | Always | 23.93 | 23.44 |
+| `i12_health_17` | Not at all | 25.41 | 26.07 |
+| `i12_health_18` | Not at all | 27.87 | 28.55 |
+| `i12_health_19` | Frequently | 31.42 | 31.89 |
+| `i12_health_20` | Frequently | 30.91 | 31.45 |
+
+
+
+
+
+## Appendix C: Data Splitting and Model Dataset Preparation
+
+The relevant files were:
+
+- `code/4_split_data.ipynb`: created a joint stratification variable based on the two binary outcomes and divided the model-ready dataset into an 80% training set and a 20% independent test set. It saved both datasets and checked the separate and joint outcome distributions in the full, training and test datasets.
+
+- `code/5_prepare_models.ipynb`: removed both outcome variables from the predictor set, created the common training and test predictor matrices, and created separate outcome vectors for the perceived feasibility and willingness models. It checked the dimensions and training outcome distributions and saved all model input files.
+
+
+### C.1 Joint Stratification and Train-Test Split
+
+```{python, eval=FALSE}
+# Create joint stratification variable
+stratify_group = (
+    df_model_ready["feasibility_binary"].astype(str)
+    + "_"
+    + df_model_ready["willingness_binary"].astype(str)
+)
+
+# Split into training and test sets
+df_train, df_test = train_test_split(
+    df_model_ready,
+    test_size=0.20,
+    random_state=42,
+    stratify=stratify_group
+)
+```
+
+| Dataset | Observations | Columns |
+|---|---:|---:|
+| Full model-ready dataset | 13114 | 113 |
+| Training set | 10491 | 113 |
+| Independent test set | 2623 | 113 |
+
+
+### C.2 Outcome Distributions After Splitting
+
+| Outcome | Class | Full dataset (%) | Training set (%) | Test set (%) |
+|---|:---:|---:|---:|---:|
+| Perceived feasibility | 0 | 22.92 | 22.91 | 22.95 |
+| Perceived feasibility | 1 | 77.08 | 77.09 | 77.05 |
+| Willingness | 0 | 14.75 | 14.75 | 14.75 |
+| Willingness | 1 | 85.25 | 85.25 | 85.25 |
+
+| Feasibility | Willingness | Full dataset (%) | Training set (%) | Test set (%) |
+|:---:|:---:|---:|---:|---:|
+| 0 | 0 | 11.30 | 11.30 | 11.32 |
+| 0 | 1 | 11.62 | 11.62 | 11.63 |
+| 1 | 0 | 3.45 | 3.45 | 3.43 |
+| 1 | 1 | 73.63 | 73.63 | 73.62 |
+
+
+### C.3 Predictor Matrices and Outcome Vectors
+
+```{python, eval=FALSE}
+# Define outcome variables
+feasibility_target = "feasibility_binary"
+willingness_target = "willingness_binary"
+
+# Remove both outcomes from the predictor columns
+feature_cols = df_train.columns.drop([
+    feasibility_target,
+    willingness_target
+])
+
+# Create the common predictor matrices
+X_train = df_train[feature_cols]
+X_test = df_test[feature_cols]
+
+# Create outcome vectors for perceived feasibility
+y_train_feasibility = df_train[feasibility_target]
+y_test_feasibility = df_test[feasibility_target]
+
+# Create outcome vectors for willingness
+y_train_willingness = df_train[willingness_target]
+y_test_willingness = df_test[willingness_target]
+```
+
+
+| Model input | Observations | Columns |
+|---|---:|---:|
+| `X_train` | 10491 | 111 |
+| `X_test` | 2623 | 111 |
+| `y_train_feasibility` | 10491 | 1 |
+| `y_test_feasibility` | 2623 | 1 |
+| `y_train_willingness` | 10491 | 1 |
+| `y_test_willingness` | 2623 | 1 |
+
+
+
+### C.4 Saved Model Input Files
+
+| File | Content |
+|---|---|
+| `data/data_processed/df_train.csv` | Complete training dataset containing predictors and both outcomes |
+| `data/data_processed/df_test.csv` | Complete independent test dataset containing predictors and both outcomes |
+| `data/model_inputs/X_train.csv` | Training predictor matrix |
+| `data/model_inputs/X_test.csv` | Test predictor matrix |
+| `data/model_inputs/y_train_feasibility.csv` | Training outcome vector for perceived feasibility |
+| `data/model_inputs/y_test_feasibility.csv` | Test outcome vector for perceived feasibility |
+| `data/model_inputs/y_train_willingness.csv` | Training outcome vector for willingness |
+| `data/model_inputs/y_test_willingness.csv` | Test outcome vector for willingness |
+
+
+
+
+
+## Appendix D: Model Tuning Settings
+
+The relevant files were:
+
+- `code/6_logistic_regression.ipynb`: compared the two Logistic Regression class-weight settings using five-fold stratified cross-validation and selected the setting with the highest mean cross-validation AUC separately for each outcome.
+
+- `code/7_random_forest.ipynb`: defined the Random Forest parameter search space and conducted randomised hyperparameter search separately for the two outcomes.
+
+
+### D.1 Cross-Validation Settings
+
+```{python, eval=FALSE}
+cv = StratifiedKFold(
+    n_splits=5,
+    shuffle=True,
+    random_state=42
+)
+```
+
+
+### D.2 Logistic Regression Tuning Settings
+
+Two class-weight settings were compared separately for each outcome.
+
+```{python, eval=FALSE}
+class_weight_options = {
+    "None": None,
+    "Balanced": "balanced"
+}
+```
+
+For each class-weight setting, Logistic Regression was fitted within a pipeline including standardisation:
+
+```{python, eval=FALSE}
+lr_model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("logistic_regression", LogisticRegression(
+        max_iter=5000,
+        random_state=42,
+        class_weight=class_weight_value
+    ))
+])
+```
+
+The class-weight setting with the highest mean five-fold cross-validation AUC was selected separately for each outcome:
+
+```{python, eval=FALSE}
+best_class_weight_name = max(
+    all_results,
+    key=lambda option: all_results[option]["mean_auc"]
+)
+
+selected_result = all_results[best_class_weight_name]
+best_class_weight = selected_result["class_weight"]
+```
+
+The `balanced` class-weight setting achieved the highest mean cross-validation AUC for both perceived feasibility and willingness and was therefore selected for both final Logistic Regression models.
+
+
+### D.3 Random Forest Parameter Search
+
+The following parameter search space was used for Random Forest.
+
+```{python, eval=FALSE}
+param_distributions = {
+    "rf__n_estimators": [300, 500, 700, 1000],
+    "rf__max_depth": [None, 10, 20, 30, 40],
+    "rf__min_samples_split": [2, 5, 10, 20],
+    "rf__min_samples_leaf": [1, 2, 4, 8],
+    "rf__max_features": ["sqrt", "log2", 0.5, 0.75],
+    "rf__class_weight": [None, "balanced"]
+}
+```
+
+
+```{python, eval=FALSE}
+rf_base = RandomForestClassifier(
+    random_state=42,
+    n_jobs=1
+)
+
+rf_model = Pipeline([
+    ("rf", rf_base)
+])
+
+rf_search = RandomizedSearchCV(
+    estimator=rf_model,
+    param_distributions=param_distributions,
+    n_iter=1000,
+    scoring="roc_auc",
+    cv=cv,
+    random_state=42,
+    n_jobs=-1,
+    verbose=1,
+    return_train_score=False
+)
+
+rf_search.fit(X, y)
+```
+
+The selected parameters were extracted without the pipeline prefix:
+
+```{python, eval=FALSE}
+clean_best_params = {
+    key.replace("rf__", ""): value
+    for key, value in rf_search.best_params_.items()
+}
+```
+
+
+### D.4 Selected Random Forest Hyperparameters
+
+Table \ref{tab:selected-rf-parameters} presents the Random Forest hyperparameters selected for perceived feasibility and willingness.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Selected Random Forest hyperparameters for perceived feasibility and willingness.}
+\label{tab:selected-rf-parameters}
+\begin{tabular}{p{7cm}cc}
+\hline
+Hyperparameter & Feasibility & Willingness \\
+\hline
+Number of trees (\texttt{n\_estimators}) & 500 & 1000 \\
+Minimum observations required to split an internal node (\texttt{min\_samples\_split}) & 2 & 2 \\
+Minimum observations required in a terminal node (\texttt{min\_samples\_leaf}) & 1 & 4 \\
+Predictors considered at each split (\texttt{max\_features}) & \texttt{sqrt} (square root) & \texttt{log2} (base-2 logarithm) \\
+Maximum tree depth (\texttt{max\_depth}) & 10 & \texttt{None} (no specified limit) \\
+Class weighting (\texttt{class\_weight}) & \texttt{None} & \texttt{None} \\
+\hline
+\end{tabular}
+\end{table}
+
+
+
+
+## Appendix E: Model Performance Result Generation
+
+The relevant files were:
+
+- `code/6_logistic_regression.ipynb`: generated the five-fold cross-validation and independent test-set results for Logistic Regression for both outcomes.
+
+- `code/7_random_forest.ipynb`: generated the five-fold cross-validation and independent test-set results for the selected Random Forest models for both outcomes.
+
+The results generated in these files are reported in Tables \ref{tab:cv-performance} and \ref{tab:test-performance}.
+
+
+
+
+## Appendix F: Random Forest Feature Importance
+
+The relevant file was:
+
+- `code/8_feature_importance.ipynb`: conducted the Random Forest feature importance analysis separately for perceived feasibility and willingness. For each outcome, the selected model was fitted 100 times using different random seeds. Importance values from dummy variables belonging to the same original predictor were summed, and the seven employment-status indicators were combined into one Employment Status variable. The file then calculated the median and quartiles across the 100 runs, identified the Top-10 predictors for each outcome, combined the two Top-10 lists for comparison, calculated the differences in median importance, and generated the comparison and difference plots.
+
+The plots generated in this file are reported in Figures \ref{fig:rf-importance-comparison} and \ref{fig:rf-importance-differences}.
+
+
+### F.1 Analysis Settings
+
+The Random Forest parameters selected during model tuning were loaded from the saved cross-validation results and kept fixed during the repeated feature importance analysis. The selected parameter values are reported in Appendix D.4.
+
+```{python, eval=FALSE}
+top_n = 10
+n_runs = 100
+
+feasibility_rf_results = joblib.load(
+    "../results/rf_feasibility_cv_results.joblib"
+)
+
+willingness_rf_results = joblib.load(
+    "../results/rf_willingness_cv_results.joblib"
+)
+
+rf_params_feasibility = (
+    feasibility_rf_results["best_params"].copy()
+)
+
+rf_params_willingness = (
+    willingness_rf_results["best_params"].copy()
+)
+```
+
+
+### F.2 Variable-Level Feature Importance Calculation
+
+Some original predictors were represented by several columns in the modelling dataset. Each model column was first mapped back to its original predictor. Within each Random Forest run, the importance values of columns belonging to the same original predictor were summed to obtain one variable-level importance value.
+
+The seven employment-status indicators were combined because they represented responses from the same underlying multi-select employment-status question. The protective behaviour variables remained separate predictors. Only the dummy columns belonging to the same protective behaviour item were combined.
+
+The table below summarises the predictors that were represented by multiple model columns and how they were treated. The variable names and mapping rules summarised in this table are defined in Sections `# 3. Feature labels` and `# 5. Map each model column back to its original predictor` of `code/8_feature_importance.ipynb`. The calculation that sums importance values belonging to the same original predictor is provided in Section `# 6. Repeated RF fitting and variable-level importance extraction`.
+
+| Variable-level predictor | Model columns | Treatment |
+|---|---|---|
+| Gender | Columns starting with `gender_` | The dummy-column importance values were mapped back to `gender` and summed. |
+| Children in Household | Columns starting with `household_children_group_` | The dummy-column importance values were mapped back to `household_children_group` and summed. |
+| Employment Status | `employment_status_1`–`employment_status_7` | The seven employment-status indicator importance values were summed and reported as one Employment Status variable. |
+| Personal COVID Test | Columns starting with `personal_test_status_` | The dummy-column importance values were mapped back to `personal_test_status` and summed. |
+| Household COVID Test | Columns starting with `household_test_status_` | The dummy-column importance values were mapped back to `household_test_status` and summed. |
+| COVID-like Symptoms | Columns starting with `covid_symptom_status_` | The dummy-column importance values were mapped back to `covid_symptom_status` and summed. |
+| Comorbidities | Columns starting with `comorbidity_status_` | The dummy-column importance values were mapped back to `comorbidity_status` and summed. |
+| Survey Wave | Columns starting with `survey_wave_` | The dummy-column importance values were mapped back to `survey_wave` and summed. |
+| Each protective behaviour item | Columns starting with `i12_health_` | Dummy-column importance values were summed separately within each protective behaviour item. |
+
+The protective behaviour variables included `i12_health_1`–`i12_health_8` and `i12_health_11`–`i12_health_20`. Each protective behaviour item remained a separate variable-level predictor. Numeric predictors, including `age_num`, `household_size_num`, `i1_health`, `i2_health` and `i7a_health`, were already represented by single model columns and were not combined.
+
+
+
+The following function mapped each model column back to its variable-level predictor. 
+
+```{python, eval=FALSE}
+
+# 5. Map each model column back to its original predictor
+
+def get_original_feature(feature):
+
+    feature = str(feature)
+
+    # Check longer variable codes first to avoid partial matching
+    for original_feature in sorted(
+        FEATURE_LABELS.keys(),
+        key=len,
+        reverse=True
+    ):
+        if (
+            feature == original_feature
+            or feature.startswith(original_feature + "_")
+        ):
+            return original_feature
+
+    # Keep unmatched variables under their existing names
+    return feature
+```
+
+```{python, eval=FALSE}
+feature_mapping = pd.DataFrame({
+    "Feature_dummy": X_train.columns
+})
+
+feature_mapping["Feature"] = (
+    feature_mapping["Feature_dummy"]
+    .apply(get_original_feature)
+)
+```
+
+
+The mapping was attached to the model-column importance values, and importance values belonging to the same original predictor were then summed within each run:
+
+```{python, eval=FALSE}
+run_importance = run_importance.merge(
+    feature_mapping,
+    on="Feature_dummy",
+    how="left"
+)
+
+run_variable_importance = (
+    run_importance
+    .groupby(
+        "Feature",
+        as_index=False
+    )["Importance"]
+    .sum()
+)
+```
+
+The complete calculation is provided in Section `# 6. Repeated RF fitting and variable-level importance extraction` of `code/8_feature_importance.ipynb`.
+
+
+### F.3 Median, Quartiles and Top-10 Selection
+
+The median importance and the first and third quartiles were calculated across the 100 runs. Predictors were then ordered by median importance.
+
+```{python, eval=FALSE}
+importance_all = pd.concat(
+    all_importances,
+    ignore_index=True
+)
+
+importance_df = (
+    importance_all
+    .groupby("Feature")["Importance"]
+    .agg(
+        Importance="median",
+        Q1=lambda x: np.percentile(x, 25),
+        Q3=lambda x: np.percentile(x, 75)
+    )
+    .reset_index()
+    .sort_values(
+        by="Importance",
+        ascending=False
+    )
+    .reset_index(drop=True)
+)
+```
+
+The complete calculation is provided in Section `# 6. Repeated RF fitting and variable-level importance extraction` of `code/8_feature_importance.ipynb`.
+
+
+
+### F.4 Union of the Two Top-10 Lists
+
+The predictors appearing in either the perceived feasibility or willingness Top-10 list were combined using a set union.
+
+```{python, eval=FALSE}
+feasibility_top_features = set(
+    feasibility_df.head(top_n_each)["Feature"]
+)
+
+willingness_top_features = set(
+    willingness_df.head(top_n_each)["Feature"]
+)
+
+selected_features = (
+    feasibility_top_features
+    | willingness_top_features
+)
+```
+
+The complete comparison-table and plotting code is provided in Sections `# 7. Prepare Top-10 union comparison table` and `# 8. Plot mirrored feasibility-willingness comparison` of `code/8_feature_importance.ipynb`.
+
+
+
+### F.5 Importance Difference Calculation
+
+The difference in median importance was calculated as willingness importance minus feasibility importance. Predictors were ranked by the absolute size of this difference, and the first ten were selected.
+
+```{python, eval=FALSE}
+diff_df["Difference"] = (
+    diff_df["Willingness"]
+    - diff_df["Feasibility"]
+)
+
+diff_df["Abs_Difference"] = (
+    diff_df["Difference"].abs()
+)
+
+diff_df = (
+    diff_df
+    .nlargest(top_n_difference, "Abs_Difference")
+    .copy()
+)
+```
+
+The complete difference-table and plotting code is provided in Sections `# 13. Prepare the variable-level RF importance difference table`, `# 14. Plot variable-level RF importance differences` and `# 15. Create and save the variable-level Top-10 difference plot` of `code/8_feature_importance.ipynb`.
+
+
+
+## Appendix G: Preliminary Exploration
+
+### G.1 Data Processing and Heatmap Construction
+
+The relevant files were:
+
+- `code/000_china_comparison.ipynb`: calculated the row-percentage tables and produced the China and Australia heatmaps.
+
+- `data/raw/china.csv`: provided the original China survey responses.
+
+- `data/raw/australia.csv`: provided the original Australia survey responses.
+
+- `results/china_australia_feasibility_willingness.png`: stored the combined heatmap figure.
+
+The preliminary exploration used the original five-level responses for perceived feasibility (`i10_health`) and willingness (`i11_health`). Observations with missing values or "Not sure" responses for either variable were excluded.
+
+For each country, a cross-tabulation was produced with perceived feasibility as the rows and willingness as the columns. Each cell count was divided by the total number of observations in its row and multiplied by 100. Therefore, the percentages within each perceived feasibility category sum to 100 and show how willingness responses were distributed among respondents who selected that feasibility category.
+
+
+### G.2 Heatmap Results
+
+Figure \ref{fig:preliminary-heatmap} presents the row-percentage heatmaps for China and Australia.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.82\textwidth]{results/china_australia_feasibility_willingness.png}
+\caption{Row-percentage distributions of willingness to self-isolate within each perceived feasibility category for the China and Australia samples. Each row sums to 100\%. Missing values and ``Not sure'' responses were excluded.}
+\label{fig:preliminary-heatmap}
+\end{figure}
+
+In both samples, respondents who considered self-isolation very easy were mostly very willing to self-isolate. In China, 89.6\% of respondents who selected "Very easy" also selected "Very willing". The corresponding percentage in Australia was 92.2\%.
+
+However, willingness and perceived feasibility did not correspond directly in every category. In the China sample, 14.7\% of respondents who considered self-isolation somewhat difficult were very willing to self-isolate, and 39.1\% were somewhat willing. Therefore, 53.8\% of this group still reported a positive willingness response. Among respondents who considered self-isolation very difficult, 31.3\% were either very willing or somewhat willing.
+
+This pattern was more noticeable in the Australia sample. Among respondents who considered self-isolation somewhat difficult, 80.5\% were very willing or somewhat willing. Among those who considered it very difficult, 61.0\% still reported one of these two positive willingness responses.
+
+Overall, the heatmaps show that greater perceived feasibility was generally associated with greater willingness. However, some respondents remained willing to self-isolate even when they believed that doing so would be difficult. This supports analysing perceived feasibility and willingness as related but distinct outcomes.
+
+
+
