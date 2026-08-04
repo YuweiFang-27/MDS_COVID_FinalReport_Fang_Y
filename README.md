@@ -33,8 +33,9 @@ MDS_COVID_FinalReport_Fang_Y/
 │
 ├── results/
 │   ├── rf_feature_importance_plots/
-│   ├── model cross-validation results
-│   └── independent test results
+│   ├── china_australia_feasibility_willingness.png
+│   ├── Random Forest cross-validation result files
+│   └── Random Forest independent test result files
 │
 ├── Report_Fang_Y.Rmd
 ├── Report_Fang_Y.pdf
@@ -69,7 +70,7 @@ The main notebooks should be run in numerical order.
 
 ## Data files
 
-- `data/raw/`: Contains the original China survey data from the Imperial College London YouGov COVID-19 Behaviour Tracker.
+- `data/raw/`: Contains the original China survey data used for the main analysis and the Australia survey data used for the preliminary comparison.
 
 - `data/data_processed/`: Contains the datasets created during variable processing, complete-case filtering and the training-test split.
 
@@ -95,21 +96,23 @@ The analysis was conducted in Python, with the code organised and executed in Ju
 
 The main workflow was:
 
-1. select and process the outcome and predictor variables;
-2. create the complete-case and model-ready datasets;
-3. divide the data into training and independent test sets;
-4. fit and compare Logistic Regression and Random Forest;
-5. evaluate model performance using cross-validation and independent test data;
-6. compare Random Forest feature importance between perceived feasibility and willingness.
+1. compare the original willingness and perceived-feasibility responses in the China and Australia samples;
+2. select and process the outcome and predictor variables;
+3. create the complete-case and model-ready datasets;
+4. divide the data into training and independent test sets;
+5. fit and compare Logistic Regression and Random Forest;
+6. evaluate model performance using cross-validation and independent test data;
+7. compare Random Forest feature importance between perceived feasibility and willingness.
+
 
 ## Data source
 
 The survey data were obtained from the **Imperial College London YouGov COVID-19 Behaviour Tracker**. This project used the China sample collected across repeated survey waves from April to September 2020.
 
-Jones, Sarah P., Imperial College London Big Data Analytical Unit, and YouGov Plc. 2020. *Imperial College London YouGov COVID-19 Data Hub.* Version 1.0. YouGov Plc. https: //github.com/YouGov-Data/covid-19-tracker.
+Jones, Sarah P., Imperial College London Big Data Analytical Unit, and YouGov Plc. 2020. *Imperial College London YouGov COVID-19 Data Hub.* Version 1.0. YouGov Plc. https://github.com/YouGov-Data/covid-19-tracker.
 
 ## Acknowledgement
 
-The methodological preparation for this project were developed with reference to Ryan et al. (2025):
+The methodological preparation for this project was informed by Ryan et al. (2025):
 
 Ryan, Matthew, Jinjing Ye, Justin Sexton, Roslyn I. Hickson, and Emily Brindal. 2025. “Face Mask Mandates Alter Major Determinants of Adherence to Protective Health Behaviours in Australia.” *Royal Society Open Science* 12 (3): 241941. https://doi.org/10.1098/rsos.241941.
